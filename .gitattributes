@@ -1,0 +1,2 @@
+deps/linux/** filter=lfs diff=lfs merge=lfs -text
+deps/windows/** filter=lfs diff=lfs merge=lfs -text
