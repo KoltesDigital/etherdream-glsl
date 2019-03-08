@@ -1,18 +1,25 @@
+#include <atomic>
 #include <cli.hpp>
 #include <cmath>
+#include <fstream>
 #include <GL/glew.h>
 #include <GL/GL.h>
 #include <iostream>
 
+#include "ConsoleOutput.hpp"
 #include "context.hpp"
+#include "FileWatcher.hpp"
 #include "opengl.hpp"
 #include "system.hpp"
 
-#include "../windows/etherdream.hpp"
+#ifdef PLATFORM_WINDOWS
+#include "../windows/EtherDreamOutput.hpp"
+#endif
 
 enum ExitCode
 {
 	Success,
+	ParameterError,
 	ContextCreationFailed,
 	ExtensionsInitializationFailed,
 	FramebufferIncomplete,
@@ -20,11 +27,53 @@ enum ExitCode
 
 int main(int argc, char **argv)
 {
-	auto pointCount = 1800;
-
 	cli::Parser parser{ argc, argv };
 
-	EtherDreamOutput output{ parser, pointCount };
+	auto pointCount = parser.option("points")
+		.alias("p")
+		.description("Resolution of a single rendering.")
+		.defaultValue("1800")
+		.getValueAs<int>();
+
+	auto shaderPath = parser.option("shader")
+		.alias("s")
+		.description("Shader file path.")
+		.required()
+		.getValueAs<std::string>();
+
+	CommonParameters commonParameters
+	{
+		pointCount,
+		shaderPath,
+	};
+
+	auto outputClass = parser.option("output")
+		.alias("o")
+		.description("Output implementation.")
+#ifdef PLATFORM_WINDOWS
+		.defaultValue("etherdream")
+#endif
+		.getValueAs<std::string>();
+
+	std::unique_ptr<Output> output;
+
+	if (outputClass == "console")
+	{
+		output = std::make_unique<ConsoleOutput>(commonParameters, parser);
+	}
+
+#ifdef PLATFORM_WINDOWS
+	else if (outputClass == "etherdream")
+	{
+		output = std::make_unique<EtherDreamOutput>(commonParameters, parser);
+	}
+#endif
+
+	if (!output)
+	{
+		std::cerr << "Unrecognized output." << std::endl;
+		return ExitCode::ParameterError;
+	}
 
 	bool help = parser.defaultHelpFlag()
 		.getValue();
@@ -37,10 +86,10 @@ int main(int argc, char **argv)
 
 	if (parser.hasErrors())
 	{
-		return EXIT_FAILURE;
+		return ExitCode::ParameterError;
 	}
 
-	auto status = output.initialize();
+	auto status = output->initialize();
 	if (status != InitializationStatus::Success)
 	{
 		return 1;
@@ -62,6 +111,16 @@ int main(int argc, char **argv)
 		return ExitCode::ExtensionsInitializationFailed;
 	}
 
+	FileWatcher fileWatcher;
+
+	std::atomic<bool> compileShader = false;
+	fileWatcher.watchFile(shaderPath, [&]()
+	{
+		compileShader = true;
+	});
+
+	fileWatcher.start();
+
 	{
 		PointTexture pointTextureXY{ 2, GL_RG32F, pointCount };
 		PointTexture pointTextureRGB{ 3, GL_RGB32F, pointCount };
@@ -71,7 +130,7 @@ int main(int argc, char **argv)
 			pointTextureRGB,
 		};
 
-		if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		if (!framebuffer.isComplete())
 		{
 			std::cerr << "Framebuffer is incomplete." << std::endl;
 			return ExitCode::FramebufferIncomplete;
@@ -87,32 +146,12 @@ int main(int argc, char **argv)
 			index = base + aOffset;\n\
 		}";
 
-		std::string fragmentSource = "#version 330\n\
-		\n\
-		smooth in float index;\n\
-		\n\
-		layout(location = 0) out vec2 position;\n\
-		layout(location = 1) out vec3 color;\n\
-		\n\
-		void main()\n\
-		{\n\
-			float angle = index * .05;\n\
-			float radius = abs(sin(angle * .4)) * .5;\n\
-			position = vec2(cos(angle*1.1), sin(angle)) * radius;\n\
-			color = vec3(1);\n\
-		}";
-
 		Shader vertexShader{ GL_VERTEX_SHADER };
 		vertexShader.compile(vertexSource);
 
 		Shader fragmentShader{ GL_FRAGMENT_SHADER };
-		fragmentShader.compile(fragmentSource);
 
 		Program program{ vertexShader, fragmentShader };
-		if (!program.link())
-		{
-			return 1;
-		}
 
 		Quad quad{ pointCount };
 
@@ -121,43 +160,67 @@ int main(int argc, char **argv)
 
 		auto points = std::make_unique<Point[]>(pointCount);
 
-		int base = 0;
-
 		for (;;)
 		{
-			glUniform1f(program.getUniformLocation(Program::Uniform::Base), (float)base);
-			base += pointCount;
-
-			while (!output.needPoints())
+			if (compileShader)
 			{
-				takeANap();
+				compileShader = false;
+
+				std::ifstream shaderFile{ shaderPath, std::ios::in | std::ios::binary };
+				if (shaderFile)
+				{
+					std::string shaderSource;
+
+					shaderFile.seekg(0, std::ios::end);
+					shaderSource.resize(shaderFile.tellg());
+					shaderFile.seekg(0, std::ios::beg);
+					shaderFile.read(&shaderSource[0], shaderSource.size());
+					shaderFile.close();
+
+					fragmentShader.compile(shaderSource);
+
+					program.link();
+				}
 			}
 
-			quad.render();
+			program.incrementBase(pointCount);
 
-			auto pointsXY = pointTextureXY.readPixels(GL_RG);
-			auto pointsRGB = pointTextureRGB.readPixels(GL_RGB);
-
-			err = glGetError();
-			if (err != GL_NO_ERROR)
+			while (!output->needPoints())
 			{
-				break;
+				pause();
 			}
 
-			for (int pointIndex = 0; pointIndex < pointCount; ++pointIndex)
+			if (program.isLinked())
 			{
-				auto &point = points[pointIndex];
-				point.x = pointsXY[pointIndex * 2 + 0];
-				point.y = pointsXY[pointIndex * 2 + 1];
-				point.r = pointsRGB[pointIndex * 3 + 0];
-				point.g = pointsRGB[pointIndex * 3 + 1];
-				point.b = pointsRGB[pointIndex * 3 + 2];
-				//std::cout << point << std::endl;
-			}
+				quad.render();
 
-			if (!output.streamPoints(points.get()))
+				auto pointsXY = pointTextureXY.readPixels(GL_RG);
+				auto pointsRGB = pointTextureRGB.readPixels(GL_RGB);
+
+				err = glGetError();
+				if (err != GL_NO_ERROR)
+				{
+					break;
+				}
+
+				for (int pointIndex = 0; pointIndex < pointCount; ++pointIndex)
+				{
+					auto &point = points[pointIndex];
+					point.x = pointsXY[pointIndex * 2 + 0];
+					point.y = pointsXY[pointIndex * 2 + 1];
+					point.r = pointsRGB[pointIndex * 3 + 0];
+					point.g = pointsRGB[pointIndex * 3 + 1];
+					point.b = pointsRGB[pointIndex * 3 + 2];
+				}
+
+				if (!output->streamPoints(points.get()))
+				{
+					break;
+				}
+			}
+			else
 			{
-				break;
+				pause();
 			}
 		}
 	}

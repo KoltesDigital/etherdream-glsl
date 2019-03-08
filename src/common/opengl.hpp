@@ -37,13 +37,18 @@ public:
 	~Program();
 
 	bool link();
-	GLint getUniformLocation(Uniform uniform) const;
+	bool isLinked() const;
+
+	void incrementBase(int pointCount);
 
 private:
 	GLuint vertexShaderName{ 0 };
 	GLuint fragmentShaderName{ 0 };
 
+	GLint linked = 0;
+
 	std::vector<GLuint> uniformLocations;
+	int base = 0;
 };
 
 class PointTexture : public ObjectWithName
@@ -66,6 +71,8 @@ public:
 	~Framebuffer();
 
 	void setTexture(int index, const PointTexture &texture);
+
+	bool isComplete() const;
 };
 
 class Quad

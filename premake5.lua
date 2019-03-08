@@ -67,8 +67,8 @@ workspace "etherdream-glsl"
 
 project "etherdream-glsl"
 	debugargs {
-		"-c",
-		"0",
+		"-s",
+		"../../../example.frag",
 	}
 	files {
 		"src/common/**",
@@ -78,20 +78,25 @@ project "etherdream-glsl"
 		"deps/include",
 	}
 	links {
+		"glew32",
 		"opengl32",
-		"glew32"
 	}
 	kind "ConsoleApp"
 
 	filter "configurations:Debug"
 		links {
+			"efsw-debug",
 		}
 
 	filter "configurations:Release"
 		links {
+			"efsw",
 		}
 
 	filter "platforms:Linux*"
+		defines {
+			"PLATFORM_LINUX",
+		}
 		files {
 			"src/linux/**",
 		}
@@ -112,6 +117,9 @@ project "etherdream-glsl"
 		}
 
 	filter "platforms:Win*"
+		defines {
+			"PLATFORM_WINDOWS",
+		}
 		files {
 			"src/windows/**",
 		}

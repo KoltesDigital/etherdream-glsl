@@ -2,6 +2,12 @@
 
 #include <ostream>
 
+struct CommonParameters
+{
+	int pointCount;
+	std::string shaderPath;
+};
+
 enum class InitializationStatus
 {
 	Success,
@@ -20,11 +26,15 @@ std::ostream &operator<<(std::ostream &stream, const Point &point);
 class Output
 {
 public:
-	virtual ~Output() {}
+	Output(const CommonParameters &commonParameters);
+	virtual ~Output();
 
 	virtual InitializationStatus initialize() = 0;
-	virtual void shutdown() {};
+	virtual void shutdown();
 
 	virtual bool needPoints() = 0;
 	virtual bool streamPoints(const Point *data) = 0;
+
+protected:
+	const CommonParameters &commonParameters;
 };

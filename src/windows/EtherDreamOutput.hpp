@@ -5,12 +5,12 @@
 #include <windows.h>
 #include <j4cDAC.h>
 
-#include "../common/output.hpp"
+#include "../common/Output.hpp"
 
 class EtherDreamOutput : public Output
 {
 public:
-	EtherDreamOutput(cli::Parser &parser, int pointCount);
+	EtherDreamOutput(const CommonParameters &commonParameters, cli::Parser &parser);
 	~EtherDreamOutput();
 
 	InitializationStatus initialize() override;
@@ -21,7 +21,6 @@ public:
 
 private:
 	std::unique_ptr<EAD_Pnt_s[]> points;
-	int pointCount;
 
 	int cardIndex;
 	bool listDevices;

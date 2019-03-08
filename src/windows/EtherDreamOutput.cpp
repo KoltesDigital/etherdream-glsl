@@ -1,9 +1,9 @@
-#include "etherdream.hpp"
+#include "EtherDreamOutput.hpp"
 
-EtherDreamOutput::EtherDreamOutput(cli::Parser &parser, int _pointCount)
-	: pointCount{ _pointCount }
+EtherDreamOutput::EtherDreamOutput(const CommonParameters &commonParameters, cli::Parser &parser)
+	: Output{ commonParameters }
 {
-	points = std::make_unique<EAD_Pnt_s[]>(pointCount);
+	points = std::make_unique<EAD_Pnt_s[]>(commonParameters.pointCount);
 
 	cardIndex = parser.option("card-index")
 		.alias("i")
@@ -88,7 +88,7 @@ static float clamp(float t, float min, float max)
 
 bool EtherDreamOutput::streamPoints(const Point *data)
 {
-	for (int i = 0; i < pointCount; ++i)
+	for (int i = 0; i < commonParameters.pointCount; ++i)
 	{
 		auto &fromPoint = data[i];
 		auto &toPoint = points[i];
@@ -100,5 +100,5 @@ bool EtherDreamOutput::streamPoints(const Point *data)
 		toPoint.B = (uint16_t)clamp(fromPoint.b * 65535.f, 0.f, 65535.f);
 	}
 
-	return EtherDreamWriteFrame(&cardIndex, points.get(), sizeof(EAD_Pnt_s) * pointCount, 25000, 1);
+	return EtherDreamWriteFrame(&cardIndex, points.get(), sizeof(EAD_Pnt_s) * commonParameters.pointCount, 25000, 1);
 }

@@ -68,9 +68,8 @@ bool Program::link()
 {
 	glLinkProgram(name);
 
-	GLint isLinked = 0;
-	glGetProgramiv(name, GL_LINK_STATUS, (int *)&isLinked);
-	if (isLinked == GL_FALSE)
+	glGetProgramiv(name, GL_LINK_STATUS, (int *)&linked);
+	if (linked == GL_FALSE)
 	{
 		GLint maxLength = 0;
 		glGetProgramiv(name, GL_INFO_LOG_LENGTH, &maxLength);
@@ -90,9 +89,15 @@ bool Program::link()
 	return true;
 }
 
-GLint Program::getUniformLocation(Uniform uniform) const
+bool Program::isLinked() const
 {
-	return uniformLocations[uniform];
+	return linked;
+}
+
+void Program::incrementBase(int pointCount)
+{
+	glUniform1f(uniformLocations[Uniform::Base], (float)base);
+	base += pointCount;
 }
 
 PointTexture::PointTexture(int components, GLint internalFormat, int pointCount)
@@ -163,6 +168,11 @@ void Framebuffer::setTexture(int index, const PointTexture &texture)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, name);
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + index, texture.getName(), 0);
+}
+
+bool Framebuffer::isComplete() const
+{
+	return (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 }
 
 Quad::Quad(int pointCount)
