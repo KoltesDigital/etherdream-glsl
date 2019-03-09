@@ -20,6 +20,7 @@ enum ExitCode
 {
 	Success,
 	ParameterError,
+	OutputCreationFailed,
 	ContextCreationFailed,
 	ExtensionsInitializationFailed,
 	FramebufferIncomplete,
@@ -41,10 +42,16 @@ int main(int argc, char **argv)
 		.required()
 		.getValueAs<std::string>();
 
+	auto verbose = parser.flag("verbose")
+		.alias("v")
+		.description("Show information messages.")
+		.getValue();
+
 	CommonParameters commonParameters
 	{
 		pointCount,
 		shaderPath,
+		verbose,
 	};
 
 	auto outputClass = parser.option("output")
@@ -92,7 +99,7 @@ int main(int argc, char **argv)
 	auto status = output->initialize();
 	if (status != InitializationStatus::Success)
 	{
-		return 1;
+		return ExitCode::OutputCreationFailed;
 	}
 
 	if (!createContext())
@@ -101,8 +108,11 @@ int main(int argc, char **argv)
 		return ExitCode::ContextCreationFailed;
 	}
 
-	std::cout << "OpenGL version: " << (char *)glGetString(GL_VERSION) << "." << std::endl;
-	std::cout << "GLSL version: " << (char *)glGetString(GL_SHADING_LANGUAGE_VERSION) << "." << std::endl;
+	if (verbose)
+	{
+		std::cout << "OpenGL version: " << (char *)glGetString(GL_VERSION) << "." << std::endl;
+		std::cout << "GLSL version: " << (char *)glGetString(GL_SHADING_LANGUAGE_VERSION) << "." << std::endl;
+	}
 
 	auto err = glewInit();
 	if (err != GLEW_OK)
@@ -164,6 +174,11 @@ int main(int argc, char **argv)
 		{
 			if (compileShader)
 			{
+				if (verbose)
+				{
+					std::cout << "Shader changed, reloading." << std::endl;
+				}
+
 				compileShader = false;
 
 				std::ifstream shaderFile{ shaderPath, std::ios::in | std::ios::binary };
@@ -180,6 +195,10 @@ int main(int argc, char **argv)
 					fragmentShader.compile(shaderSource);
 
 					program.link();
+				}
+				else
+				{
+					std::cerr << "Unable to open shader." << std::endl;
 				}
 			}
 
@@ -227,5 +246,5 @@ int main(int argc, char **argv)
 
 	destroyContext();
 
-	return 0;
+	return ExitCode::Success;
 }

@@ -6,6 +6,7 @@ struct CommonParameters
 {
 	int pointCount;
 	std::string shaderPath;
+	bool verbose;
 };
 
 enum class InitializationStatus
