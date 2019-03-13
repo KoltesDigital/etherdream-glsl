@@ -126,13 +126,13 @@ project "etherdream-glsl"
 			"etherdream",
 		}
 
-	filter "platforms:MacOSX"
+	filter "platforms:MacOSX32"
 		debugdir "deps/macosx/bin32"
 		libdirs {
 			"deps/macosx/lib32",
 		}
 
-	filter "platforms:MacOSX"
+	filter "platforms:MacOSX64"
 		debugdir "deps/macosx/bin64"
 		libdirs {
 			"deps/macosx/lib64",
