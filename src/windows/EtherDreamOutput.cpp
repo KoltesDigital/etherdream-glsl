@@ -15,6 +15,24 @@ EtherDreamOutput::EtherDreamOutput(const CommonParameters &commonParameters, cli
 		.alias("l")
 		.description("List devices.")
 		.getValue();
+
+	offsetX = parser.option("offset-x")
+		.alias("ox")
+		.description("Offset output on X axis.")
+		.defaultValue("0")
+		.getValueAs<float>();
+
+	offsetY = parser.option("offset-y")
+		.alias("oy")
+		.description("Offset output on Y axis.")
+		.defaultValue("0")
+		.getValueAs<float>();
+
+	scale = parser.option("scale")
+		.alias("s")
+		.description("Scale output.")
+		.defaultValue("1")
+		.getValueAs<float>();
 }
 
 EtherDreamOutput::~EtherDreamOutput()
@@ -93,8 +111,8 @@ bool EtherDreamOutput::streamPoints(const Point *data)
 		auto &fromPoint = data[i];
 		auto &toPoint = points[i];
 
-		toPoint.X = (int16_t)clamp(fromPoint.x * 32767.f, -32768.f, 32767.f);
-		toPoint.Y = (int16_t)clamp(fromPoint.y * 32767.f, -32768.f, 32767.f);
+		toPoint.X = (int16_t)clamp((fromPoint.x + offsetX) * scale * 32767.f, -32768.f, 32767.f);
+		toPoint.Y = (int16_t)clamp((fromPoint.y + offsetY) * scale * 32767.f, -32768.f, 32767.f);
 		toPoint.R = (uint16_t)clamp(fromPoint.r * 65535.f, 0.f, 65535.f);
 		toPoint.G = (uint16_t)clamp(fromPoint.g * 65535.f, 0.f, 65535.f);
 		toPoint.B = (uint16_t)clamp(fromPoint.b * 65535.f, 0.f, 65535.f);

@@ -24,6 +24,9 @@ private:
 
 	int cardIndex;
 	bool listDevices;
+	float offsetX;
+	float offsetY;
+	float scale;
 
 	bool open{ false };
 };
