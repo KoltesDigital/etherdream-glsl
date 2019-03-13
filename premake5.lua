@@ -21,6 +21,8 @@ configurations {
 platforms {
 	"Linux32",
 	"Linux64",
+	"MacOSX32",
+	"MacOSX64",
 	"Win32",
 	"Win64",
 }
@@ -45,19 +47,16 @@ filter "configurations:Release"
 filter "platforms:Linux*"
 	system "Linux"
 
-filter "platforms:Linux32"
-	architecture "x86"
-
-filter "platforms:Linux64"
-	architecture "x64"
+filter "platforms:MacOSX*"
+	system "MacOSX"
 
 filter "platforms:Win*"
 	system "Windows"
 
-filter "platforms:Win32"
+filter "platforms:*32"
 	architecture "x86"
 
-filter "platforms:Win64"
+filter "platforms:*64"
 	architecture "x64"
 
 workspace "etherdream-glsl"
@@ -114,6 +113,29 @@ project "etherdream-glsl"
 		debugdir "deps/linux/bin64"
 		libdirs {
 			"deps/linux/lib64",
+		}
+
+	filter "platforms:MacOSX*"
+		defines {
+			"PLATFORM_MACOSX",
+		}
+		files {
+			"src/macosx/**",
+		}
+		links {
+			"etherdream",
+		}
+
+	filter "platforms:MacOSX"
+		debugdir "deps/macosx/bin32"
+		libdirs {
+			"deps/macosx/lib32",
+		}
+
+	filter "platforms:MacOSX"
+		debugdir "deps/macosx/bin64"
+		libdirs {
+			"deps/macosx/lib64",
 		}
 
 	filter "platforms:Win*"
