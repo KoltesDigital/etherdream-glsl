@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 
 	auto verbose = parser.flag("verbose")
 		.alias("v")
-		.description("Show information messages.")
+		.description("Shows information messages.")
 		.getValue();
 
 	CommonParameters commonParameters

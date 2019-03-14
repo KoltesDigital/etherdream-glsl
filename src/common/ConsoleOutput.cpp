@@ -9,13 +9,13 @@ ConsoleOutput::ConsoleOutput(const CommonParameters &commonParameters, cli::Pars
 {
 	limitPoints = parser.option("limit-points")
 		.alias("l")
-		.description("Limit the number of dumped points.")
+		.description("If greater than 0, limits the number of dumped points.")
 		.defaultValue("0")
 		.getValueAs<int>();
 
 	pauseDuration = parser.option("pause-duration")
 		.alias("d")
-		.description("Pause between renderings.")
+		.description("Pause between renderings, in seconds.")
 		.defaultValue("0")
 		.getValueAs<float>();
 }

@@ -13,24 +13,24 @@ EtherDreamOutput::EtherDreamOutput(const CommonParameters &commonParameters, cli
 
 	listDevices = parser.flag("list-devices")
 		.alias("l")
-		.description("List devices.")
+		.description("Lists devices.")
 		.getValue();
 
 	offsetX = parser.option("offset-x")
 		.alias("ox")
-		.description("Offset output on X axis.")
+		.description("Offsets X coordinates.")
 		.defaultValue("0")
 		.getValueAs<float>();
 
 	offsetY = parser.option("offset-y")
 		.alias("oy")
-		.description("Offset output on Y axis.")
+		.description("Offsets Y coordinates.")
 		.defaultValue("0")
 		.getValueAs<float>();
 
 	scale = parser.option("scale")
-		.alias("s")
-		.description("Scale output.")
+		.alias("sc")
+		.description("Scales coordinates.")
 		.defaultValue("1")
 		.getValueAs<float>();
 }

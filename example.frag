@@ -1,6 +1,6 @@
 #version 330
 
-smooth in float index;
+in float index;
 
 layout(location=0)out vec2 position;
 layout(location=1)out vec3 color;
