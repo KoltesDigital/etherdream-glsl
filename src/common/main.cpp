@@ -12,8 +12,10 @@
 #include "opengl.hpp"
 #include "system.hpp"
 
-#ifdef PLATFORM_WINDOWS
+#if defined(SYSTEM_WINDOWS)
 #include "../windows/EtherDreamOutput.hpp"
+#else
+#error "Unrecognized system"
 #endif
 
 enum ExitCode
@@ -57,7 +59,7 @@ int main(int argc, char **argv)
 	auto outputClass = parser.option("output")
 		.alias("o")
 		.description("Output implementation.")
-#ifdef PLATFORM_WINDOWS
+#if defined(SYSTEM_WINDOWS)
 		.defaultValue("etherdream")
 #endif
 		.getValueAs<std::string>();
@@ -69,7 +71,7 @@ int main(int argc, char **argv)
 		output = std::make_unique<ConsoleOutput>(commonParameters, parser);
 	}
 
-#ifdef PLATFORM_WINDOWS
+#if defined(SYSTEM_WINDOWS)
 	else if (outputClass == "etherdream")
 	{
 		output = std::make_unique<EtherDreamOutput>(commonParameters, parser);
@@ -187,7 +189,7 @@ int main(int argc, char **argv)
 					std::string shaderSource;
 
 					shaderFile.seekg(0, std::ios::end);
-					shaderSource.resize(shaderFile.tellg());
+					shaderSource.resize((std::size_t)shaderFile.tellg());
 					shaderFile.seekg(0, std::ios::beg);
 					shaderFile.read(&shaderSource[0], shaderSource.size());
 					shaderFile.close();

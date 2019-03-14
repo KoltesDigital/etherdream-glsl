@@ -137,7 +137,7 @@ Framebuffer::Framebuffer(std::initializer_list<std::reference_wrapper<PointTextu
 
 
 	std::vector<GLenum> drawBuffers(list.size());
-	for (int i = 0; i < list.size(); ++i)
+	for (int i = 0; i < (int)list.size(); ++i)
 	{
 		drawBuffers[i] = GL_COLOR_ATTACHMENT0 + i;
 	};

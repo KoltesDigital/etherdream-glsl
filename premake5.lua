@@ -19,12 +19,8 @@ configurations {
 }
 
 platforms {
-	"Linux32",
-	"Linux64",
-	"MacOSX32",
-	"MacOSX64",
-	"Win32",
-	"Win64",
+	"x32",
+	"x64",
 }
 
 warnings "Extra"
@@ -44,19 +40,28 @@ filter "configurations:Release"
 	optimize "Speed"
 	runtime "Release"
 
-filter "platforms:Linux*"
-	system "Linux"
+filter "system:macosx"
+	defines {
+		"SYSTEM_MACOSX",
+	}
+	system "macosx"
 
-filter "platforms:MacOSX*"
-	system "MacOSX"
+filter "system:linux"
+	defines {
+		"SYSTEM_LINUX",
+	}
+	system "linux"
 
-filter "platforms:Win*"
-	system "Windows"
+filter "system:windows"
+	defines {
+		"SYSTEM_WINDOWS",
+	}
+	system "windows"
 
-filter "platforms:*32"
+filter "platforms:x32"
 	architecture "x86"
 
-filter "platforms:*64"
+filter "platforms:x64"
 	architecture "x64"
 
 workspace "etherdream-glsl"
@@ -83,19 +88,25 @@ project "etherdream-glsl"
 	kind "ConsoleApp"
 
 	filter "configurations:Debug"
+		defines {
+			"DEBUG",
+		}
 		links {
 			"efsw-debug",
 		}
+		targetsuffix "-d"
+		symbols "On"
 
 	filter "configurations:Release"
+		defines {
+			"NDEBUG",
+		}
+		optimize "On"
 		links {
 			"efsw",
 		}
 
-	filter "platforms:Linux*"
-		defines {
-			"PLATFORM_LINUX",
-		}
+	filter "system:linux"
 		files {
 			"src/linux/**",
 		}
@@ -103,22 +114,19 @@ project "etherdream-glsl"
 			"etherdream"
 		}
 
-	filter "platforms:Linux32"
+	filter { "system:linux", "platforms:x32" }
 		debugdir "deps/linux/bin32"
 		libdirs {
 			"deps/linux/lib32",
 		}
 
-	filter "platforms:Linux64"
+	filter { "system:linux", "platforms:x64" }
 		debugdir "deps/linux/bin64"
 		libdirs {
 			"deps/linux/lib64",
 		}
 
-	filter "platforms:MacOSX*"
-		defines {
-			"PLATFORM_MACOSX",
-		}
+	filter "system:macosx"
 		files {
 			"src/macosx/**",
 		}
@@ -126,22 +134,19 @@ project "etherdream-glsl"
 			"etherdream",
 		}
 
-	filter "platforms:MacOSX32"
+	filter { "system:macosx", "platforms:x32" }
 		debugdir "deps/macosx/bin32"
 		libdirs {
 			"deps/macosx/lib32",
 		}
 
-	filter "platforms:MacOSX64"
+	filter { "system:macosx", "platforms:x64" }
 		debugdir "deps/macosx/bin64"
 		libdirs {
 			"deps/macosx/lib64",
 		}
 
-	filter "platforms:Win*"
-		defines {
-			"PLATFORM_WINDOWS",
-		}
+	filter "system:windows"
 		files {
 			"src/windows/**",
 		}
@@ -149,13 +154,13 @@ project "etherdream-glsl"
 			"EtherDream",
 		}
 
-	filter "platforms:Win32"
+	filter { "system:windows", "platforms:x32" }
 		debugdir "deps/windows/bin32"
 		libdirs {
 			"deps/windows/lib32",
 		}
 
-	filter "platforms:Win64"
+	filter { "system:windows", "platforms:x64" }
 		debugdir "deps/windows/bin64"
 		libdirs {
 			"deps/windows/lib64",
