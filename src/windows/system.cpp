@@ -6,7 +6,7 @@
 std::tuple<std::string, std::string> splitDirectoryNameAndBaseName(const std::string &path)
 {
 	auto bufferLength = 4096;
-	auto fullPathBuffer = std::make_unique<char[]>(bufferLength);
+	auto fullPathBuffer = std::unique_ptr<char[]>(new char[bufferLength]);
 	char *filename;
 
 	auto fullPathLength = GetFullPathNameA(path.c_str(), bufferLength, fullPathBuffer.get(), &filename);

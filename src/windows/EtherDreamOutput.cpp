@@ -3,7 +3,7 @@
 EtherDreamOutput::EtherDreamOutput(const CommonParameters &commonParameters, cli::Parser &parser)
 	: Output{ commonParameters }
 {
-	points = std::make_unique<EAD_Pnt_s[]>(commonParameters.pointCount);
+	points.reset(new EAD_Pnt_s[commonParameters.pointCount]);
 
 	cardIndex = parser.option("card-index")
 		.alias("i")

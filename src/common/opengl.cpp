@@ -110,7 +110,7 @@ PointTexture::PointTexture(int components, GLint internalFormat, int pointCount)
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-	pixels = std::make_unique<float[]>(components * pointCount);
+	pixels.reset(new float[components * pointCount]);
 }
 
 PointTexture::~PointTexture()

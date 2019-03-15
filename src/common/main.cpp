@@ -66,13 +66,13 @@ int main(int argc, char **argv)
 
 	if (outputClass == "console")
 	{
-		output = std::make_unique<ConsoleOutput>(commonParameters, parser);
+		output.reset(new ConsoleOutput(commonParameters, parser));
 	}
 
 #if defined(SYSTEM_WINDOWS)
 	else if (outputClass == "etherdream")
 	{
-		output = std::make_unique<EtherDreamOutput>(commonParameters, parser);
+		output.reset(new EtherDreamOutput(commonParameters, parser));
 	}
 #endif
 
@@ -168,7 +168,7 @@ int main(int argc, char **argv)
 		glEnable(GL_CULL_FACE);
 		glViewport(0, 0, pointCount, 1);
 
-		auto points = std::make_unique<Point[]>(pointCount);
+		auto points = std::unique_ptr<Point[]>(new Point[pointCount]);
 
 		for (;;)
 		{
