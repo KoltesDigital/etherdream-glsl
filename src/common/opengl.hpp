@@ -3,8 +3,14 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+#if defined(SYSTEM_MACOSX)
+#include <OpenGL/glew.h>
+#include <OpenGL/gl.h>
+#else
 #include <GL/glew.h>
-#include <GL/GL.h>
+#include <GL/gl.h>
+#endif
 
 class ObjectWithName
 {

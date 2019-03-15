@@ -2,8 +2,6 @@
 #include <cli.hpp>
 #include <cmath>
 #include <fstream>
-#include <GL/glew.h>
-#include <GL/GL.h>
 #include <iostream>
 
 #include "ConsoleOutput.hpp"
