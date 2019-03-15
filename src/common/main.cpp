@@ -10,7 +10,11 @@
 #include "opengl.hpp"
 #include "system.hpp"
 
-#if defined(SYSTEM_WINDOWS)
+#if defined(SYSTEM_LINUX)
+// ...
+#elif defined(SYSTEM_MACOSX)
+// ...
+#elif defined(SYSTEM_WINDOWS)
 #include "../windows/EtherDreamOutput.hpp"
 #else
 #error "Unrecognized system"
@@ -59,6 +63,8 @@ int main(int argc, char **argv)
 		.description("Output implementation.")
 #if defined(SYSTEM_WINDOWS)
 		.defaultValue("etherdream")
+#else
+		.defaultValue("console")
 #endif
 		.getValueAs<std::string>();
 
