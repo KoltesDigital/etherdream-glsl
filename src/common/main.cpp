@@ -123,7 +123,7 @@ int main(int argc, char **argv)
 
 	FileWatcher fileWatcher;
 
-	std::atomic<bool> compileShader = false;
+	std::atomic<bool> compileShader{ false };
 	fileWatcher.watchFile(shaderPath, [&]()
 	{
 		compileShader = true;
