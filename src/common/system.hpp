@@ -3,6 +3,10 @@
 #include <string>
 #include <tuple>
 
-std::tuple<std::string, std::string> splitDirectoryNameAndBaseName(const std::string &path);
+void systemStartTime();
 
-void pause(float duration = 0.f);
+float systemGetTime();
+
+std::tuple<std::string, std::string> systemSplitDirectoryNameAndBaseName(const std::string &path);
+
+void systemPause(float duration = 0.f);

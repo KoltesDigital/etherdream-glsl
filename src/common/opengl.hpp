@@ -36,6 +36,7 @@ public:
 	enum Uniform
 	{
 		Base,
+		Time,
 		_Count,
 	};
 
@@ -46,6 +47,7 @@ public:
 	bool isLinked() const;
 
 	void incrementBase(int pointCount);
+	void updateTime();
 
 private:
 	GLuint vertexShaderName{ 0 };

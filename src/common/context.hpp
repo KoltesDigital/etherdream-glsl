@@ -1,4 +1,5 @@
 #pragma once
 
-bool createContext();
-void destroyContext();
+bool contextCreate();
+
+void contextDestroy();

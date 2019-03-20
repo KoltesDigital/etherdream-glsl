@@ -6,7 +6,7 @@
 
 static HGLRC context;
 
-bool createContext()
+bool contextCreate()
 {
 	PIXELFORMATDESCRIPTOR pfd =
 	{
@@ -44,7 +44,7 @@ bool createContext()
 	return true;
 }
 
-void destroyContext()
+void contextDestroy()
 {
 	wglDeleteContext(context);
 }

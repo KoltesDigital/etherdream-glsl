@@ -3,6 +3,8 @@
 #include <iostream>
 #include <iterator>
 
+#include "system.hpp"
+
 GLuint ObjectWithName::getName() const
 {
 	return name;
@@ -85,6 +87,7 @@ bool Program::link()
 	glUseProgram(name);
 
 	uniformLocations[Uniform::Base] = glGetUniformLocation(name, "base");
+	uniformLocations[Uniform::Time] = glGetUniformLocation(name, "time");
 
 	return true;
 }
@@ -98,6 +101,11 @@ void Program::incrementBase(int pointCount)
 {
 	glUniform1f(uniformLocations[Uniform::Base], (float)base);
 	base += pointCount;
+}
+
+void Program::updateTime()
+{
+	glUniform1f(uniformLocations[Uniform::Time], systemGetTime());
 }
 
 PointTexture::PointTexture(int components, GLint internalFormat, int pointCount)

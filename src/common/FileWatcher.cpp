@@ -2,7 +2,7 @@
 
 void FileWatcher::watchFile(const std::string &path, callback_t callback)
 {
-	auto namePair = splitDirectoryNameAndBaseName(path);
+	auto namePair = systemSplitDirectoryNameAndBaseName(path);
 	if (std::get<0>(namePair).empty())
 	{
 		return;

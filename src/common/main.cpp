@@ -108,7 +108,7 @@ int main(int argc, char **argv)
 		return ExitCode::OutputCreationFailed;
 	}
 
-	if (!createContext())
+	if (!contextCreate())
 	{
 		std::cerr << "Context creation failed." << std::endl;
 		return ExitCode::ContextCreationFailed;
@@ -176,6 +176,8 @@ int main(int argc, char **argv)
 
 		auto points = std::unique_ptr<Point[]>(new Point[pointCount]);
 
+		systemStartTime();
+
 		for (;;)
 		{
 			if (compileShader)
@@ -208,15 +210,16 @@ int main(int argc, char **argv)
 				}
 			}
 
-			program.incrementBase(pointCount);
-
 			while (!output->needPoints())
 			{
-				pause();
+				systemPause();
 			}
 
 			if (program.isLinked())
 			{
+				program.incrementBase(pointCount);
+				program.updateTime();
+
 				quad.render();
 
 				auto pointsXY = pointTextureXY.readPixels(GL_RG);
@@ -245,12 +248,12 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				pause();
+				systemPause();
 			}
 		}
 	}
 
-	destroyContext();
+	contextDestroy();
 
 	return ExitCode::Success;
 }

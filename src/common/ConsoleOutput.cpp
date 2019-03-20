@@ -39,7 +39,7 @@ bool ConsoleOutput::streamPoints(const Point *data)
 		std::cout << data[i] << std::endl;
 	}
 
-	pause(pauseDuration);
+	systemPause(pauseDuration);
 
 	return true;
 }
