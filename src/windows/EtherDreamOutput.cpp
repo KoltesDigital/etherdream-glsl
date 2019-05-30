@@ -1,5 +1,7 @@
 #include "EtherDreamOutput.hpp"
 
+const int EtherDreamOutput::NameBufferSize = 256;
+
 EtherDreamOutput::EtherDreamOutput(const CommonParameters &commonParameters, cli::Parser &parser)
 	: Output{ commonParameters }
 {
@@ -10,6 +12,11 @@ EtherDreamOutput::EtherDreamOutput(const CommonParameters &commonParameters, cli
 		.description("Card index in the device list.")
 		.defaultValue(0)
 		.getValueAs<int>();
+
+	cardName = parser.option("card-name")
+		.alias("n")
+		.description("Card name in the device list (overrides card-index).")
+		.getValue();
 
 	listDevices = parser.flag("list-devices")
 		.alias("l")
@@ -49,7 +56,7 @@ InitializationStatus EtherDreamOutput::initialize()
 		std::cout << "Devices:" << std::endl;
 		for (int index = 0; index < cardCount; ++index)
 		{
-			char nameBuffer[256];
+			char nameBuffer[NameBufferSize];
 			EtherDreamGetDeviceName(&index, nameBuffer, sizeof(nameBuffer));
 			std::cout << index << ": " << nameBuffer << std::endl;
 		}
@@ -57,7 +64,28 @@ InitializationStatus EtherDreamOutput::initialize()
 		return InitializationStatus::RequestExit;
 	}
 
-	if (cardIndex < 0 || cardIndex >= cardCount)
+	if (cardName != nullptr)
+	{
+		cardIndex = -1;
+
+		for (int index = 0; index < cardCount; ++index)
+		{
+			char nameBuffer[NameBufferSize];
+			EtherDreamGetDeviceName(&index, nameBuffer, sizeof(nameBuffer));
+			if (!std::strncmp(cardName, nameBuffer, NameBufferSize))
+			{
+				cardIndex = index;
+				break;
+			}
+		}
+
+		if (cardIndex < 0)
+		{
+			std::cerr << "Card name was not found." << std::endl;
+			return InitializationStatus::Failure;
+		}
+	}
+	else if (cardIndex < 0 || cardIndex >= cardCount)
 	{
 		std::cerr << "Card index is out of bounds." << std::endl;
 		return InitializationStatus::Failure;

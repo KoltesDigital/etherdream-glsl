@@ -10,6 +10,8 @@
 class EtherDreamOutput : public Output
 {
 public:
+	static const int NameBufferSize;
+
 	EtherDreamOutput(const CommonParameters &commonParameters, cli::Parser &parser);
 	~EtherDreamOutput();
 
@@ -23,6 +25,7 @@ private:
 	std::unique_ptr<EAD_Pnt_s[]> points;
 
 	int cardIndex;
+	const char *cardName;
 	bool listDevices;
 	float offsetX;
 	float offsetY;
