@@ -40,6 +40,12 @@ int main(int argc, char **argv)
 		.defaultValue("1800")
 		.getValueAs<int>();
 
+	auto pointsPerSecond = parser.option("points-per-second")
+		.alias("pps")
+		.description("Laser speed.")
+		.defaultValue("25000")
+		.getValueAs<uint16_t>();
+
 	auto shaderPath = parser.option("shader")
 		.alias("s")
 		.description("Shader file path.")
@@ -54,6 +60,7 @@ int main(int argc, char **argv)
 	CommonParameters commonParameters
 	{
 		pointCount,
+		pointsPerSecond,
 		shaderPath,
 		verbose,
 	};

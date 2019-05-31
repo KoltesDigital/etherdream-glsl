@@ -5,6 +5,7 @@
 struct CommonParameters
 {
 	int pointCount;
+	uint16_t pointsPerSecond;
 	std::string shaderPath;
 	bool verbose;
 };

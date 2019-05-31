@@ -146,5 +146,5 @@ bool EtherDreamOutput::streamPoints(const Point *data)
 		toPoint.B = (uint16_t)clamp(fromPoint.b * 65535.f, 0.f, 65535.f);
 	}
 
-	return EtherDreamWriteFrame(&cardIndex, points.get(), sizeof(EAD_Pnt_s) * commonParameters.pointCount, 25000, 1);
+	return EtherDreamWriteFrame(&cardIndex, points.get(), sizeof(EAD_Pnt_s) * commonParameters.pointCount, commonParameters.pointsPerSecond, 1);
 }
