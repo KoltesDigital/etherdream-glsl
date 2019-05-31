@@ -28,42 +28,180 @@ enum ExitCode
 	ContextCreationFailed,
 	ExtensionsInitializationFailed,
 	FramebufferIncomplete,
+	InvalidShaderCode,
 };
+
+static CommonParameters commonParameters;
+
+static std::unique_ptr<Shader> vertexShader;
+static std::unique_ptr<Shader> fragmentShader;
+static std::unique_ptr<Program> program;
+
+static std::atomic<bool> shaderChanged{ false };
+static std::unique_ptr<Output> output;
+
+bool compileProgram()
+{
+	std::ifstream shaderFile{ commonParameters.shaderPath, std::ios::in | std::ios::binary };
+	if (!shaderFile)
+	{
+		std::cerr << "Unable to open shader." << std::endl;
+		return false;
+	}
+
+	std::string shaderSource;
+
+	shaderFile.seekg(0, std::ios::end);
+	shaderSource.resize((std::size_t)shaderFile.tellg());
+	shaderFile.seekg(0, std::ios::beg);
+	shaderFile.read(&shaderSource[0], shaderSource.size());
+	shaderFile.close();
+
+	std::unique_ptr<Shader> newFragmentShader{ new Shader{ GL_FRAGMENT_SHADER } };
+	std::unique_ptr<Program> newProgram{ new Program { *vertexShader, *newFragmentShader } };
+
+	newFragmentShader->compile(shaderSource);
+
+	if (!newProgram->link())
+	{
+		std::cerr << "Failed to link program." << std::endl;
+		return false;
+	}
+
+	fragmentShader = std::move(newFragmentShader);
+	program = std::move(newProgram);
+	return true;
+}
+
+ExitCode run()
+{
+	PointTexture pointTextureXY{ 2, GL_RG32F, commonParameters.pointCount };
+	PointTexture pointTextureRGB{ 3, GL_RGB32F, commonParameters.pointCount };
+
+	Framebuffer framebuffer{
+		pointTextureXY,
+		pointTextureRGB,
+	};
+
+	if (!framebuffer.isComplete())
+	{
+		std::cerr << "Framebuffer is incomplete." << std::endl;
+		return ExitCode::FramebufferIncomplete;
+	}
+
+	std::string vertexSource = "#version 330\n\
+		layout(location = 0) in vec2 aPosition;\n\
+		layout(location = 1) in float aOffset;\n\
+		out float index;\n\
+		uniform float base;\n\
+		void main() {\n\
+			gl_Position = vec4(aPosition, 0, 1);\n\
+			index = base + aOffset;\n\
+		}";
+
+	vertexShader.reset(new Shader{ GL_VERTEX_SHADER });
+	vertexShader->compile(vertexSource);
+
+	if (!compileProgram())
+	{
+		return ExitCode::InvalidShaderCode;
+	}
+
+	Quad quad{ commonParameters.pointCount };
+
+	glEnable(GL_CULL_FACE);
+	glViewport(0, 0, commonParameters.pointCount, 1);
+
+	auto points = std::unique_ptr<Point[]>(new Point[commonParameters.pointCount]);
+
+	systemStartTime();
+
+	for (;;)
+	{
+		if (shaderChanged)
+		{
+			if (commonParameters.verbose)
+			{
+				std::cout << "Shader changed, reloading." << std::endl;
+			}
+
+			shaderChanged = false;
+
+			compileProgram();
+		}
+
+		if (program->isLinked())
+		{
+			program->incrementBase(commonParameters.pointCount);
+			program->updateTime();
+
+			quad.render();
+
+			auto pointsXY = pointTextureXY.readPixels(GL_RG);
+			auto pointsRGB = pointTextureRGB.readPixels(GL_RGB);
+
+			auto err = glGetError();
+			if (err != GL_NO_ERROR)
+			{
+				break;
+			}
+
+			for (int pointIndex = 0; pointIndex < commonParameters.pointCount; ++pointIndex)
+			{
+				auto &point = points[pointIndex];
+				point.x = pointsXY[pointIndex * 2 + 0];
+				point.y = pointsXY[pointIndex * 2 + 1];
+				point.r = pointsRGB[pointIndex * 3 + 0];
+				point.g = pointsRGB[pointIndex * 3 + 1];
+				point.b = pointsRGB[pointIndex * 3 + 2];
+			}
+
+			if (!output->streamPoints(points.get()))
+			{
+				break;
+			}
+
+			while (!output->needPoints())
+			{
+				systemPause();
+			}
+		}
+		else
+		{
+			systemPause();
+		}
+	}
+
+	return ExitCode::Success;
+}
+
 
 int main(int argc, char **argv)
 {
 	cli::Parser parser{ argc, argv };
 
-	auto pointCount = parser.option("points")
+	commonParameters.pointCount = parser.option("points")
 		.alias("p")
 		.description("Resolution of a single rendering.")
 		.defaultValue("1800")
 		.getValueAs<int>();
 
-	auto pointsPerSecond = parser.option("points-per-second")
+	commonParameters.pointsPerSecond = parser.option("points-per-second")
 		.alias("pps")
 		.description("Laser speed.")
 		.defaultValue("25000")
 		.getValueAs<uint16_t>();
 
-	auto shaderPath = parser.option("shader")
+	commonParameters.shaderPath = parser.option("shader")
 		.alias("s")
 		.description("Shader file path.")
 		.required()
 		.getValueAs<std::string>();
 
-	auto verbose = parser.flag("verbose")
+	commonParameters.verbose = parser.flag("verbose")
 		.alias("v")
 		.description("Shows information messages.")
 		.getValue();
-
-	CommonParameters commonParameters
-	{
-		pointCount,
-		pointsPerSecond,
-		shaderPath,
-		verbose,
-	};
 
 	auto outputClass = parser.option("output")
 		.alias("o")
@@ -74,8 +212,6 @@ int main(int argc, char **argv)
 		.defaultValue("console")
 #endif
 		.getValueAs<std::string>();
-
-	std::unique_ptr<Output> output;
 
 	if (outputClass == "console")
 	{
@@ -121,7 +257,7 @@ int main(int argc, char **argv)
 		return ExitCode::ContextCreationFailed;
 	}
 
-	if (verbose)
+	if (commonParameters.verbose)
 	{
 		std::cout << "OpenGL version: " << (char *)glGetString(GL_VERSION) << "." << std::endl;
 		std::cout << "GLSL version: " << (char *)glGetString(GL_SHADING_LANGUAGE_VERSION) << "." << std::endl;
@@ -136,131 +272,16 @@ int main(int argc, char **argv)
 
 	FileWatcher fileWatcher;
 
-	std::atomic<bool> compileShader{ false };
-	fileWatcher.watchFile(shaderPath, [&]()
+	fileWatcher.watchFile(commonParameters.shaderPath, [&]()
 	{
-		compileShader = true;
+		shaderChanged = true;
 	});
 
 	fileWatcher.start();
 
-	{
-		PointTexture pointTextureXY{ 2, GL_RG32F, pointCount };
-		PointTexture pointTextureRGB{ 3, GL_RGB32F, pointCount };
-
-		Framebuffer framebuffer{
-			pointTextureXY,
-			pointTextureRGB,
-		};
-
-		if (!framebuffer.isComplete())
-		{
-			std::cerr << "Framebuffer is incomplete." << std::endl;
-			return ExitCode::FramebufferIncomplete;
-		}
-
-		std::string vertexSource = "#version 330\n\
-		layout(location = 0) in vec2 aPosition;\n\
-		layout(location = 1) in float aOffset;\n\
-		out float index;\n\
-		uniform float base;\n\
-		void main() {\n\
-			gl_Position = vec4(aPosition, 0, 1);\n\
-			index = base + aOffset;\n\
-		}";
-
-		Shader vertexShader{ GL_VERTEX_SHADER };
-		vertexShader.compile(vertexSource);
-
-		Shader fragmentShader{ GL_FRAGMENT_SHADER };
-
-		Program program{ vertexShader, fragmentShader };
-
-		Quad quad{ pointCount };
-
-		glEnable(GL_CULL_FACE);
-		glViewport(0, 0, pointCount, 1);
-
-		auto points = std::unique_ptr<Point[]>(new Point[pointCount]);
-
-		systemStartTime();
-
-		for (;;)
-		{
-			if (compileShader)
-			{
-				if (verbose)
-				{
-					std::cout << "Shader changed, reloading." << std::endl;
-				}
-
-				compileShader = false;
-
-				std::ifstream shaderFile{ shaderPath, std::ios::in | std::ios::binary };
-				if (shaderFile)
-				{
-					std::string shaderSource;
-
-					shaderFile.seekg(0, std::ios::end);
-					shaderSource.resize((std::size_t)shaderFile.tellg());
-					shaderFile.seekg(0, std::ios::beg);
-					shaderFile.read(&shaderSource[0], shaderSource.size());
-					shaderFile.close();
-
-					fragmentShader.compile(shaderSource);
-
-					program.link();
-				}
-				else
-				{
-					std::cerr << "Unable to open shader." << std::endl;
-				}
-			}
-
-			while (!output->needPoints())
-			{
-				systemPause();
-			}
-
-			if (program.isLinked())
-			{
-				program.incrementBase(pointCount);
-				program.updateTime();
-
-				quad.render();
-
-				auto pointsXY = pointTextureXY.readPixels(GL_RG);
-				auto pointsRGB = pointTextureRGB.readPixels(GL_RGB);
-
-				err = glGetError();
-				if (err != GL_NO_ERROR)
-				{
-					break;
-				}
-
-				for (int pointIndex = 0; pointIndex < pointCount; ++pointIndex)
-				{
-					auto &point = points[pointIndex];
-					point.x = pointsXY[pointIndex * 2 + 0];
-					point.y = pointsXY[pointIndex * 2 + 1];
-					point.r = pointsRGB[pointIndex * 3 + 0];
-					point.g = pointsRGB[pointIndex * 3 + 1];
-					point.b = pointsRGB[pointIndex * 3 + 2];
-				}
-
-				if (!output->streamPoints(points.get()))
-				{
-					break;
-				}
-			}
-			else
-			{
-				systemPause();
-			}
-		}
-	}
+	auto exitCode = run();
 
 	contextDestroy();
 
-	return ExitCode::Success;
+	return exitCode;
 }
